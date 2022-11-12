@@ -20,32 +20,22 @@ export default function Home() {
 
       const device = await adapter.requestDevice();
 
-      const inBuffer = device.createBuffer({
+      const gpuBuffer = device.createBuffer({
         mappedAtCreation: true,
-        size: 16,
-        usage: GPUBufferUsage.STORAGE,
-      });
-      const arrayBuffer = inBuffer.getMappedRange();
-      new Float32Array(arrayBuffer).set([0, 1, 2, 3]);
-      inBuffer.unmap();
-
-      const outBuffer = device.createBuffer({
         size: 16,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
       });
+      const arrayBuffer = gpuBuffer.getMappedRange();
+      new Float32Array(arrayBuffer).set([0, 1, 2, 3]);
+      gpuBuffer.unmap();
 
       const bindGroupLayoutEntries: GPUBindGroupLayoutEntry[] = [
         {
           binding: 0,
           visibility: GPUShaderStage.COMPUTE,
           buffer: {
-            type: 'read-only-storage',
+            type: 'storage',
           },
-        },
-        {
-          binding: 1,
-          visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: 'storage' },
         },
       ];
       const bindGroupLayout = device.createBindGroupLayout({
@@ -53,8 +43,7 @@ export default function Home() {
       });
 
       const bindGroupEntries: GPUBindGroupEntry[] = [
-        { binding: 0, resource: { buffer: inBuffer } },
-        { binding: 1, resource: { buffer: outBuffer } },
+        { binding: 0, resource: { buffer: gpuBuffer } },
       ];
       const bindGroup = device.createBindGroup({
         layout: bindGroupLayout,
@@ -83,7 +72,7 @@ export default function Home() {
         size: 16,
         usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
       });
-      commandEncoder.copyBufferToBuffer(outBuffer, 0, gpuReadBuffer, 0, 16);
+      commandEncoder.copyBufferToBuffer(gpuBuffer, 0, gpuReadBuffer, 0, 16);
 
       const gpuCommands = commandEncoder.finish();
       device.queue.submit([gpuCommands]);
